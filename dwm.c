@@ -924,7 +924,6 @@ destroynotify(XEvent *e)
 	
 	else if ((c = swallowingclient(ev->window)))
 		unmanage(c->swallowing, 1);
-
 }
 
 void
