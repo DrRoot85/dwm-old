@@ -3,7 +3,7 @@
 /* appearance */
 static const unsigned int borderpx  = 1;        /* border pixel of windows */
 static const unsigned int snap      = 32;       /* snap pixel */
-static const int swallowfloating    = 0;        /* 1 means swallow floating windows by default */
+static const int swallowfloating    = 1;        /* 1 means swallow floating windows by default */
 static const unsigned int gappx     = 5;        /* gaps between windows */
 static const unsigned int gappih    = 20;       /* horiz inner gap between windows */
 static const unsigned int gappiv    = 10;       /* vert inner gap between windows */
@@ -47,6 +47,7 @@ static const Rule rules[] = {
 	{ "Gimp",    NULL,     NULL,           0,         1,          0,           0,        -1 },
 	{ "Firefox", NULL,     NULL,           1 << 8,    0,          0,          -1,        -1 },
 	{ "St",      NULL,     NULL,           0,         0,          1,           0,        -1 },
+	{ "mpv",     NULL,     NULL,           0,         1,          1,           1,        -1 },
 	{ NULL,      NULL,     "Event Tester", 0,         0,          0,           1,        -1 }, /* xev */
 };
 
@@ -98,8 +99,8 @@ static const Layout layouts[] = {
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-nb", normbgcolor, "-nf", normfgcolor, "-sb", selbordercolor, "-sf", selfgcolor, NULL };
-static const char *termcmd[]  = { "kitty", NULL };
-static const char *termcmd2[]  = { "sakura", NULL };
+static const char *termcmd2[]  = { "kitty", NULL };
+static const char *termcmd[]  = { "sakura", NULL };
 static const char *clipcmd[] 	 = { "clipmenu", NULL };
 //static const char *mute[]     = {"pactl", "set-source-mute", "@DEFAULT_SOURCE@", "toggle", NULL};
 //static const char *downbri[]  = {"xbacklight", "-dec", "5", NULL};
@@ -127,7 +128,7 @@ ResourcePref resources[] = {
 		{ "gappiv",		INTEGER, &gappiv },
 		{ "gappoh",		INTEGER, &gappoh },
 		{ "gappov",		INTEGER, &gappov },
-		// { "swallowfloating",	INTEGER, &swallowfloating },
+		{ "swallowfloating",	INTEGER, &swallowfloating },
 		{ "smartgaps",		INTEGER, &smartgaps },
 };
 
@@ -147,6 +148,7 @@ static const Key keys[] = {
 	/* */
 	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
 	{ MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
+	{ MODKEY|ConreolMask,           XK_Return, spawn,          {.v = termcmd2 } },
 	{ MODKEY, 	                XK_c, 	   spawn, 	   {.v = clipcmd}},
 	{ MODKEY,                       XK_b,      togglebar,      {0} },
 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
