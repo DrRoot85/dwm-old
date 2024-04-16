@@ -152,9 +152,14 @@ struct Client {
 typedef struct {
 	unsigned int mod;
 	KeySym keysym;
+} Key;
+
+typedef struct {
+    unsigned int n;
+    const Key keys[5];
 	void (*func)(const Arg *);
 	const Arg arg;
-} Key;
+} Keychord;
 
 typedef struct {
 	const char *symbol;
@@ -256,6 +261,7 @@ static void grabkeys(void);
 static void incnmaster(const Arg *arg);
 static void keypress(XEvent *e);
 static void killclient(const Arg *arg);
+static void layoutmenu(const Arg *arg);
 static void loadxrdb(void);
 static void manage(Window w, XWindowAttributes *wa);
 static void mappingnotify(XEvent *e);
@@ -263,6 +269,8 @@ static void maprequest(XEvent *e);
 static void monocle(Monitor *m);
 static void motionnotify(XEvent *e);
 static void movemouse(const Arg *arg);
+static void movekeyboard_x(const Arg *arg);
+static void movekeyboard_y(const Arg *arg);
 static Client *nexttiled(Client *c);
 static void pop(Client *c);
 static void propertynotify(XEvent *e);
@@ -382,6 +390,7 @@ static Display *dpy;
 static Drw *drw;
 static Monitor *mons, *selmon;
 static Window root, wmcheckwin;
+unsigned int currentkey = 0;
 
 static xcb_connection_t *xcon;
 
@@ -615,9 +624,15 @@ buttonpress(XEvent *e)
 	}
 	if (ev->window == selmon->barwin) {
 		i = x = 0;
-		do
+		unsigned int occ = 0;
+		for(c = m->clients; c; c=c->next)
+			occ |= c->tags == TAGMASK ? 0 : c->tags;
+		do {
+			/* Do not reserve space for vacant tags */
+			if (!(occ & 1 << i || m->tagset[m->seltags] & 1 << i))
+				continue;
 			x += TEXTW(tags[i]);
-		while (ev->x >= x && ++i < LENGTH(tags));
+		} while (ev->x >= x && ++i < LENGTH(tags));
 		if (i < LENGTH(tags)) {
 			click = ClkTagBar;
 			arg.ui = 1 << i;
@@ -1003,19 +1018,22 @@ drawbar(Monitor *m)
 
 	resizebarwin(m);
 	for (c = m->clients; c; c = c->next) {
-		occ |= c->tags;
+		occ |= c->tags == TAGMASK ? 0 : c->tags;
 		if (c->isurgent)
 			urg |= c->tags;
 	}
 	x = 0;
 	for (i = 0; i < LENGTH(tags); i++) {
+		/* Do not draw vacant tags */
+		if(!(occ & 1 << i || m->tagset[m->seltags] & 1 << i))
+			continue;
 		w = TEXTW(tags[i]);
 		drw_setscheme(drw, scheme[m->tagset[m->seltags] & 1 << i ? SchemeSel : SchemeNorm]);
 		drw_text(drw, x, 0, w, bh, lrpad / 2, tags[i], urg & 1 << i);
-		if (occ & 1 << i)
-			drw_rect(drw, x + boxs, boxs, boxw, boxw,
-				m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
-				urg & 1 << i);
+		// if (occ & 1 << i)
+		// 	drw_rect(drw, x + boxs, boxs, boxw, boxw,
+		// 		m == selmon && selmon->sel && selmon->sel->tags & 1 << i,
+		// 		urg & 1 << i);
 		x += w;
 	}
 	w = TEXTW(m->ltsymbol);
@@ -1290,7 +1308,9 @@ grabkeys(void)
 {
 	updatenumlockmask();
 	{
-		unsigned int i, j, k;
+		// unsigned int i, j, k;
+		/* unsigned int i, j, k; */
+		unsigned int i, c, k;
 		unsigned int modifiers[] = { 0, LockMask, numlockmask, numlockmask|LockMask };
 		int start, end, skip;
 		KeySym *syms;
@@ -1300,15 +1320,20 @@ grabkeys(void)
 		syms = XGetKeyboardMapping(dpy, start, end - start + 1, &skip);
 		if (!syms)
 			return;
+
 		for (k = start; k <= end; k++)
-			for (i = 0; i < LENGTH(keys); i++)
+			for (i = 0; i < LENGTH(keychords); i++)
 				/* skip modifier codes, we do that ourselves */
-				if (keys[i].keysym == syms[(k - start) * skip])
-					for (j = 0; j < LENGTH(modifiers); j++)
+				// if (keys[i].keysym == syms[(k - start) * skip])
+				// 	for (j = 0; j < LENGTH(modifiers); j++)
+				if (keychords[i]->keys[currentkey].keysym == syms[(k - start) * skip])
+					for (c = 0; c < LENGTH(modifiers); c++)
 						XGrabKey(dpy, k,
-							 keys[i].mod | modifiers[j],
+							 keychords[i]->keys[currentkey].mod | modifiers[c],
 							 root, True,
 							 GrabModeAsync, GrabModeAsync);
+    if(currentkey > 0)
+    	  XGrabKey(dpy, XKeysymToKeycode(dpy, XK_Escape), AnyModifier, root, True, GrabModeAsync, GrabModeAsync);
 		XFree(syms);
 	}
 }
@@ -1335,17 +1360,55 @@ isuniquegeom(XineramaScreenInfo *unique, size_t n, XineramaScreenInfo *info)
 void
 keypress(XEvent *e)
 {
-	unsigned int i;
-	KeySym keysym;
+	/* unsigned int i; */
+  XEvent event = *e;
+  unsigned int ran = 0;	KeySym keysym;
 	XKeyEvent *ev;
 
-	ev = &e->xkey;
-	keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
-	for (i = 0; i < LENGTH(keys); i++)
-		if (keysym == keys[i].keysym
-		&& CLEANMASK(keys[i].mod) == CLEANMASK(ev->state)
-		&& keys[i].func)
-			keys[i].func(&(keys[i].arg));
+	// ev = &e->xkey;
+	// keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
+	// for (i = 0; i < LENGTH(keys); i++)
+	// 	if (keysym == keys[i].keysym
+	// 	&& CLEANMASK(keys[i].mod) == CLEANMASK(ev->state)
+	// 	&& keys[i].func)
+	// 		keys[i].func(&(keys[i].arg));
+  Keychord *arr1[sizeof(keychords) / sizeof(Keychord*)];
+  Keychord *arr2[sizeof(keychords) / sizeof(Keychord*)];
+  memcpy(arr1, keychords, sizeof(keychords));
+  Keychord **rpointer = arr1;
+  Keychord **wpointer = arr2;
+  size_t r = sizeof(keychords)/ sizeof(Keychord*);
+  while(1){
+          ev = &event.xkey;
+          keysym = XKeycodeToKeysym(dpy, (KeyCode)ev->keycode, 0);
+          size_t w = 0;
+          for (int i = 0; i < r; i++){
+                  if(keysym == (*(rpointer + i))->keys[currentkey].keysym
+                     && CLEANMASK((*(rpointer + i))->keys[currentkey].mod) == CLEANMASK(ev->state)
+                     && (*(rpointer + i))->func){
+                          if((*(rpointer + i))->n == currentkey +1){
+                                  (*(rpointer + i))->func(&((*(rpointer + i))->arg));
+                                  ran = 1;
+                          }else{
+                                  *(wpointer + w) = *(rpointer + i);
+                                  w++;
+                          }
+                  }
+          }
+          currentkey++;
+          if(w == 0 || ran == 1)
+                  break;
+          grabkeys();
+          while (running && !XNextEvent(dpy, &event) && !ran)
+                  if(event.type == KeyPress)
+                          break;
+          r = w;
+          Keychord **holder = rpointer;
+          rpointer = wpointer;
+          wpointer = holder;
+  }
+  currentkey = 0;
+  grabkeys();
 }
 
 void
@@ -1364,6 +1427,25 @@ killclient(const Arg *arg)
 		XUngrabServer(dpy);
 	}
 }
+
+void
+layoutmenu(const Arg *arg) {
+	FILE *p;
+	char c[3], *s;
+	int i;
+
+	if (!(p = popen(layoutmenu_cmd, "r")))
+		 return;
+	s = fgets(c, sizeof(c), p);
+	pclose(p);
+
+	if (!s || *s == '\0' || c[0] == '\0')
+		 return;
+
+	i = atoi(c);
+	setlayout(&((Arg) { .v = &layouts[i] }));
+}
+
 
 void
 loadxrdb()
@@ -1595,6 +1677,92 @@ movemouse(const Arg *arg)
 		}
 	} while (ev.type != ButtonRelease);
 	XUngrabPointer(dpy, CurrentTime);
+	if ((m = recttomon(c->x, c->y, c->w, c->h)) != selmon) {
+		sendmon(c, m);
+		selmon = m;
+		focus(NULL);
+	}
+}
+
+void
+movekeyboard_x(const Arg *arg){
+	int ocx, ocy, nx, ny;
+	Client *c;
+	Monitor *m;
+
+	if (!(c = selmon->sel))
+		return;
+
+	if (c->isfullscreen) /* no support moving fullscreen windows by mouse */
+		return;
+
+	restack(selmon);
+
+	ocx = c->x;
+	ocy = c->y;
+
+	nx = ocx + arg->i;
+	ny = ocy;
+
+	if (abs(selmon->wx - nx) < snap)
+		nx = selmon->wx;
+	else if (abs((selmon->wx + selmon->ww) - (nx + WIDTH(c))) < snap)
+		nx = selmon->wx + selmon->ww - WIDTH(c);
+
+	if (abs(selmon->wy - ny) < snap)
+		ny = selmon->wy;
+	else if (abs((selmon->wy + selmon->wh) - (ny + HEIGHT(c))) < snap)
+		ny = selmon->wy + selmon->wh - HEIGHT(c);
+
+	if (!c->isfloating)
+		togglefloating(NULL);
+
+	if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+		resize(c, nx, ny, c->w, c->h, 1);
+
+	if ((m = recttomon(c->x, c->y, c->w, c->h)) != selmon) {
+		sendmon(c, m);
+		selmon = m;
+		focus(NULL);
+	}
+}
+
+void
+movekeyboard_y(const Arg *arg){
+	int ocx, ocy, nx, ny;
+	Client *c;
+	Monitor *m;
+
+	if (!(c = selmon->sel))
+		return;
+
+	if (c->isfullscreen) /* no support moving fullscreen windows by mouse */
+		return;
+
+	restack(selmon);
+
+	ocx = c->x;
+	ocy = c->y;
+
+	nx = ocx;
+	ny = ocy + arg->i;
+
+	if (abs(selmon->wx - nx) < snap)
+		nx = selmon->wx;
+	else if (abs((selmon->wx + selmon->ww) - (nx + WIDTH(c))) < snap)
+		nx = selmon->wx + selmon->ww - WIDTH(c);
+
+	if (abs(selmon->wy - ny) < snap)
+		ny = selmon->wy;
+	else if (abs((selmon->wy + selmon->wh) - (ny + HEIGHT(c))) < snap)
+		ny = selmon->wy + selmon->wh - HEIGHT(c);
+
+	if (!c->isfloating)
+		togglefloating(NULL);
+
+	if (!selmon->lt[selmon->sellt]->arrange || c->isfloating)
+		resize(c, nx, ny, c->w, c->h, 1);
+
 	if ((m = recttomon(c->x, c->y, c->w, c->h)) != selmon) {
 		sendmon(c, m);
 		selmon = m;
