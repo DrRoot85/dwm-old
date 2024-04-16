@@ -196,6 +196,7 @@ static Keychord *keychords[] = {
 	 &((Keychord){1, {{MODKEY,                       XK_m}},      setlayout,      {.v = &layouts[2]} }),
 	 &((Keychord){1, {{MODKEY,                       XK_space}},  setlayout,      {0} }),
 	 &((Keychord){1, {{MODKEY|ShiftMask,             XK_space}},  togglefloating, {0} }),
+	 &((Keychord){1, {{MODKEY|ShiftMask,             XK_f}},      togglefullscr,  {0} }),
 	 &((Keychord){1, {{MODKEY,                       XK_0}},      view,           {.ui = ~0 } }),
 	 &((Keychord){1, {{MODKEY|ShiftMask,             XK_0}},      tag,            {.ui = ~0 } }),
 	 &((Keychord){1, {{MODKEY,                       XK_comma}},  focusmon,       {.i = -1 } }),
