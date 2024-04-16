@@ -55,8 +55,7 @@ static const Rule rules[] = {
 static float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
 static int nmaster     = 1;    /* number of clients in master area */
 static int resizehints = 1;    /* 1 means respect size hints in tiled resizals */
-// static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
-static const int lockfullscreen = 0; /* 1 will force focus on the fullscreen window */
+static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
 
 #define FORCE_VSPLIT 1  /* nrowgrid layout: force two clients to always split vertically */
 #include "vanitygaps.c"
@@ -196,7 +195,6 @@ static Keychord *keychords[] = {
 	 &((Keychord){1, {{MODKEY,                       XK_m}},      setlayout,      {.v = &layouts[2]} }),
 	 &((Keychord){1, {{MODKEY,                       XK_space}},  setlayout,      {0} }),
 	 &((Keychord){1, {{MODKEY|ShiftMask,             XK_space}},  togglefloating, {0} }),
-	 &((Keychord){1, {{MODKEY|ShiftMask,             XK_f}},      togglefullscr,  {0} }),
 	 &((Keychord){1, {{MODKEY,                       XK_0}},      view,           {.ui = ~0 } }),
 	 &((Keychord){1, {{MODKEY|ShiftMask,             XK_0}},      tag,            {.ui = ~0 } }),
 	 &((Keychord){1, {{MODKEY,                       XK_comma}},  focusmon,       {.i = -1 } }),
