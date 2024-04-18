@@ -33,6 +33,22 @@ static char *colors[][3] = {
        [SchemeNorm] = { normfgcolor, normbgcolor, normbordercolor },
        [SchemeSel]  = { selfgcolor,  selbgcolor,  selbordercolor  },
 };
+
+typedef struct {
+	const char *name;
+	const void *cmd;
+} Sp;
+const char *spcmd1[] = {"st", "-n", "spterm", "-g", "120x34", NULL };
+const char *spcmd2[] = {"st", "-n", "spfm", "-g", "144x41", "-e", "ranger", NULL };
+const char *spcmd3[] = {"keepassxc", NULL };
+static Sp scratchpads[] = {
+	/* name          cmd  */
+	{"spterm",      spcmd1},
+	{"spranger",    spcmd2},
+	{"keepassxc",   spcmd3},
+};
+
+
 static const XPoint stickyicon[]    = { {0,0}, {4,0}, {4,8}, {2,6}, {0,8}, {0,0} }; /* represents the icon as an array of vertices */
 static const XPoint stickyiconbb    = {4,8};	/* defines the bottom right corner of the polygon's bounding box (speeds up scaling) */
 
@@ -50,6 +66,9 @@ static const Rule rules[] = {
 	{ "St",      NULL,     NULL,           0,         0,          1,           0,        -1 },
 	{ "mpv",     NULL,     NULL,           0,         1,          1,           1,        -1 },
 	{ NULL,      NULL,     "Event Tester", 0,         0,          0,           1,        -1 }, /* xev */
+	{ NULL,	     "spterm",		NULL,		SPTAG(0),		1,	1,		 -1 },
+	{ NULL,	     "spfm",		NULL,		SPTAG(1),		1,	1,		 -1 },
+	{ NULL,	     "keepassxc",	NULL,		SPTAG(2),		0,	1,		 -1 },
 };
 
 /* layout(s) */
@@ -139,6 +158,7 @@ ResourcePref resources[] = {
 		{ "gappov",		INTEGER, &gappov },
 		{ "swallowfloating",	INTEGER, &swallowfloating },
 		{ "smartgaps",		INTEGER, &smartgaps },
+
 };
 
 #include "selfrestart.c"
@@ -202,6 +222,9 @@ static Keychord *keychords[] = {
 	 &((Keychord){1, {{MODKEY,                       XK_period}}, focusmon,       {.i = +1 } }),
 	 &((Keychord){1, {{MODKEY|ShiftMask,             XK_comma}},  tagmon,         {.i = -1 } }),
 	 &((Keychord){1, {{MODKEY|ShiftMask,             XK_period}}, tagmon,         {.i = +1 } }),
+        &((Keychord){1, {{MODKEY,            		XK_y}},      togglescratch,  {.ui = 0 } }),
+	 &((Keychord){1, {{MODKEY,            		XK_u}},      togglescratch,  {.ui = 1 } }),
+	 &((Keychord){1, {{MODKEY,            		XK_x}},      togglescratch,  {.ui = 2 } }),
 	 &((Keychord){1, {{MODKEY,                       XK_F5}},     xrdb,           {.v = NULL } }),
 	 &((Keychord){1, {{MODKEY|ControlMask,	    XK_l}},	 movekeyboard_x, {.i = 20} }),
 	 &((Keychord){1, {{MODKEY|ControlMask,	    XK_h}},	 movekeyboard_x, {.i = -20} }),
@@ -243,7 +266,7 @@ static const Button buttons[] = {
 	{ ClkStatusText,        0,              Button3,        sigstatusbar,   {.i = 3} },
 	{ ClkClientWin,         MODKEY,         Button1,        movemouse,      {0} },
 	{ ClkClientWin,         MODKEY,         Button2,        togglefloating, {0} },
-	{ ClkClientWin,         MODKEY,         Button3,        resizemouse,    {0} },
+	{ ClkClientWin,         MODKEY,         Button1,        resizemouse,    {0} },
 	{ ClkClientWin,         MODKEY,         Button4,        resizemousescroll, {.v = &scrollargs[0]} },
 	{ ClkClientWin,         MODKEY,         Button5,        resizemousescroll, {.v = &scrollargs[1]} },
 	{ ClkClientWin,         MODKEY,         Button6,        resizemousescroll, {.v = &scrollargs[2]} },
