@@ -1,1 +1,8 @@
 git remote add upstream https://git.suckless.org/dwm
+
+
+https://dwm.suckless.org/patches/rotatestack/
+
+https://dwm.suckless.org/patches/rotatetags/
+
+https://dwm.suckless.org/patches/defaulttransparency/
