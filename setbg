@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# Pick an image using nsxiv
+selected_image=$(nsxiv -r -q -o ~/Pictures/Wallpapers/"$1")
+
+# Extract colors with pywal
+wal -i "$selected_image"
+
+# Set Xwallpaper background
+xwallpaper --stretch "$selected_image"
+
+sleep 2

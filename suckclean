@@ -1,0 +1,31 @@
+#!/bin/sh
+
+cd $HOME/.config/suckless/dwm
+sleep 1
+doas make install clean && notify-send "DWM Done"
+
+sleep 1
+
+echo "##############################################################################"
+
+cd .. && cd dmenu 
+sleep 1
+doas make install clean && notify-send "Dmenu Done"
+echo "##############################################################################"
+
+sleep 1
+
+cd .. && cd st 
+sleep 1
+doas make install clean && notify-send "St Done"
+echo "##############################################################################"
+
+sleep 1
+
+cd .. && cd slstatus 
+sleep 1
+doas make install clean  && notify-send "Slstatus Done"
+echo "##############################################################################"
+
+sleep 1
+

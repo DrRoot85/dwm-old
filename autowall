@@ -1,0 +1,8 @@
+#!/bin/sh
+
+wal -i "$HOME/Pictures/Wallpapers" -n
+sleep 2
+#feh --bg-fill "$(< "${HOME}/.cache/wal/wal")"
+xargs xwallpaper --stretch < ~/.cache/wal/wal
+sleep 2
+#suckclean && sleep 5 &&  notify-send "All Done Restart Dwm Now"
